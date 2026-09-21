@@ -210,8 +210,10 @@ public class LTPAToken2 implements Token, Serializable {
             toBeEnc[i] = timeAndSign[i - accessID.length];
         }
 
-        boolean useGCM = PQCConstants.CRYPTO_MODE_PQC.equals(cryptoMode)
-                      || PQCConstants.CRYPTO_MODE_HYBRID.equals(cryptoMode);
+        // boolean useGCM = PQCConstants.CRYPTO_MODE_PQC.equals(cryptoMode)
+        //               || PQCConstants.CRYPTO_MODE_HYBRID.equals(cryptoMode);
+
+        boolean useGCM = false;
 
         if (TraceComponent.isAnyTracingEnabled() && tc.isEventEnabled()) {
             String encType = (useGCM ? CIPHER_AES_GCM : cipher);
@@ -245,8 +247,9 @@ public class LTPAToken2 implements Token, Serializable {
      */
     @FFDCIgnore({ BadPaddingException.class, Exception.class })
     private final void decrypt() throws InvalidTokenException {
-        boolean useGCM = PQCConstants.CRYPTO_MODE_PQC.equals(cryptoMode)
-                      || PQCConstants.CRYPTO_MODE_HYBRID.equals(cryptoMode);
+        // boolean useGCM = PQCConstants.CRYPTO_MODE_PQC.equals(cryptoMode)
+        //               || PQCConstants.CRYPTO_MODE_HYBRID.equals(cryptoMode);
+        boolean useGCM = false;
 
         if (TraceComponent.isAnyTracingEnabled() && tc.isEventEnabled()) {
             String encType = (useGCM ? CIPHER_AES_GCM : cipher);

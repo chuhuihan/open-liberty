@@ -194,12 +194,15 @@ final class LTPACrypto {
      */
     @Trivial
     protected static final byte[] signISO9796(byte[][] key, byte[] data, int off, int len) throws Exception {
+        long _t0 = System.currentTimeMillis();
+        System.out.println("[ltpacrypto] signISO9796: start=" + _t0 + " ms");
         CachingKey ck = new CachingKey(key, data, off, len);
         CachingKey result = cryptoKeysMap.get(ck);
 
         if (result != null) {
             result.successfulUses += 1;
             result.reused = true;
+            System.out.println("[ltpacrypto] signISO9796: cache-hit elapsed=" + (System.currentTimeMillis() - _t0) + " ms");
             return result.result;
         } else {
             if (cryptoKeysMap.size() >= MAX_CACHE) {
@@ -263,6 +266,7 @@ final class LTPACrypto {
         ck.result = sig;
         ck.successfulUses = 0;
 
+        System.out.println("[ltpacrypto] signISO9796: end elapsed=" + (System.currentTimeMillis() - _t0) + " ms");
         return sig;
     }
 
@@ -489,11 +493,14 @@ final class LTPACrypto {
     @Trivial
     protected static final boolean verifyISO9796(byte[][] key, byte[] data, int off, int len, byte[] sig, int sigOff,
             int sigLen) throws Exception {
+        long _t0 = System.currentTimeMillis();
+        System.out.println("[ltpacrypto] verifyISO9796: start=" + _t0 + " ms");
         CachingVerifyKey ck = new CachingVerifyKey(key, data, off, len, sig, sigOff, sigLen);
         CachingVerifyKey result = verifyKeysMap.get(ck);
 
         if (result != null) {
             result.successfulUses += 1;
+            System.out.println("[ltpacrypto] verifyISO9796: cache-hit elapsed=" + (System.currentTimeMillis() - _t0) + " ms");
             return result.result;
         } else {
             if (verifyKeysMap.size() >= MAX_CACHE) {
@@ -545,6 +552,7 @@ final class LTPACrypto {
         ck.result = verified;
         ck.successfulUses = 0;
 
+        System.out.println("[ltpacrypto] verifyISO9796: end elapsed=" + (System.currentTimeMillis() - _t0) + " ms");
         return verified;
     }
 
@@ -705,6 +713,12 @@ final class LTPACrypto {
      */
     @Trivial
     protected static final byte[] encryptGCM(byte[] data, byte[] key) throws Exception {
+        long _t0 = System.currentTimeMillis();
+        System.out.println("[ltpacrypto] encryptGCM: start=" + _t0 + " ms key[0..3]="
+            + (key != null && key.length >= 4
+               ? String.format("%02x%02x%02x%02x", key[0], key[1], key[2], key[3])
+               : "null/short") + " keylen=" + (key != null ? key.length : 0)
+            + " datalen=" + (data != null ? data.length : 0));
         // Generate random 12-byte IV for GCM
         SecureRandom random = new SecureRandom();
         byte[] iv = new byte[12];
@@ -729,7 +743,8 @@ final class LTPACrypto {
         byte[] result = new byte[iv.length + ciphertext.length];
         System.arraycopy(iv, 0, result, 0, iv.length);
         System.arraycopy(ciphertext, 0, result, iv.length, ciphertext.length);
-        
+
+        System.out.println("[ltpacrypto] encryptGCM: end elapsed=" + (System.currentTimeMillis() - _t0) + " ms resultlen=" + result.length);
         return result;
     }
 
@@ -745,6 +760,12 @@ final class LTPACrypto {
      */
     @Trivial
     protected static final byte[] decryptGCM(byte[] encryptedData, byte[] key) throws Exception {
+        long _t0 = System.currentTimeMillis();
+        System.out.println("[ltpacrypto] decryptGCM: start=" + _t0 + " ms key[0..3]="
+            + (key != null && key.length >= 4
+               ? String.format("%02x%02x%02x%02x", key[0], key[1], key[2], key[3])
+               : "null/short") + " keylen=" + (key != null ? key.length : 0)
+            + " inputlen=" + (encryptedData != null ? encryptedData.length : 0));
         // Extract IV (first 12 bytes)
         byte[] iv = new byte[12];
         System.arraycopy(encryptedData, 0, iv, 0, 12);
@@ -766,7 +787,9 @@ final class LTPACrypto {
         cipher.init(Cipher.DECRYPT_MODE, keySpec, gcmSpec);
         
         // Decrypt and verify authentication tag
-        return cipher.doFinal(ciphertext);
+        byte[] plaintext = cipher.doFinal(ciphertext);
+        System.out.println("[ltpacrypto] decryptGCM: end elapsed=" + (System.currentTimeMillis() - _t0) + " ms");
+        return plaintext;
     }
 
     /*

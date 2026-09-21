@@ -199,9 +199,6 @@ public class PQCSignatureHelper {
         if (mldsaPrivateKey == null) {
             throw new IllegalArgumentException("ML-DSA private key cannot be null");
         }
-        if (provider == null || provider.isEmpty()) {
-            throw new IllegalArgumentException("Provider cannot be null or empty");
-        }
 
         try {
             // 1. Sign with RSA using existing Liberty LTPA code
@@ -273,9 +270,6 @@ public class PQCSignatureHelper {
         }
         if (mldsaPublicKey == null) {
             throw new IllegalArgumentException("ML-DSA public key cannot be null");
-        }
-        if (provider == null || provider.isEmpty()) {
-            throw new IllegalArgumentException("Provider cannot be null or empty");
         }
 
         try {

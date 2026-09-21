@@ -83,9 +83,11 @@ public class LTPAToken2Factory implements TokenFactory {
          * @return Array containing [PrivateKey, PublicKey] or null if not available
          */
         private Object[] loadMLDSAKeys(LTPAKeyInfoManager keyInfoMgr, String keyFile, String provider) {
+                byte[] privateKeyBytes = null;
+                byte[] publicKeyBytes = null;
                 try {
-                        byte[] privateKeyBytes = keyInfoMgr.getMLDSAPrivateKey(keyFile);
-                        byte[] publicKeyBytes = keyInfoMgr.getMLDSAPublicKey(keyFile);
+                        privateKeyBytes = keyInfoMgr.getMLDSAPrivateKey(keyFile);
+                        publicKeyBytes = keyInfoMgr.getMLDSAPublicKey(keyFile);
 
                         if (privateKeyBytes == null || publicKeyBytes == null) {
                                 if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
@@ -108,6 +110,9 @@ public class LTPAToken2Factory implements TokenFactory {
                         if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
                                 Tr.debug(tc, "Error loading ML-DSA keys: " + e.getMessage());
                         }
+                        System.out.println("[loadMLDSAKeys] FAILED: " + e.getClass().getSimpleName() + ": " + e.getMessage()
+                            + " privateKeyBytes=" + (privateKeyBytes != null ? privateKeyBytes.length : "null") + "B"
+                            + " publicKeyBytes=" + (publicKeyBytes != null ? publicKeyBytes.length : "null") + "B");
                         return null;
                 }
         }
