@@ -16,6 +16,11 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
+import java.security.KeyFactory;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
@@ -24,6 +29,7 @@ import com.ibm.websphere.crypto.PasswordUtil;
 import com.ibm.websphere.ras.Tr;
 import com.ibm.websphere.ras.TraceComponent;
 import com.ibm.websphere.ras.annotation.Sensitive;
+import com.ibm.ws.crypto.ltpakeyutil.LTPAKeyFileUtilityImpl;
 import com.ibm.ws.crypto.ltpakeyutil.LTPAPrivateKey;
 import com.ibm.ws.crypto.ltpakeyutil.LTPAPublicKey;
 import com.ibm.ws.security.token.ltpa.LTPAConfiguration;
@@ -66,9 +72,41 @@ class LTPAKeyCreateTask implements Runnable {
 
     @Sensitive
     private Map<String, Object> createTokenFactoryMap() {
+        boolean useGCM = config.isUseGCM();
+        PrivateKey primaryPrivateKey = null;
+        PublicKey primaryPublicKey = null;
+
         LTPAKeyInfoManager keyInfoManager = config.getLTPAKeyInfoManager();
-        LTPAPrivateKey primaryPrivateKey = new LTPAPrivateKey(keyInfoManager.getPrivateKey(config.getPrimaryKeyFile()));
-        LTPAPublicKey primaryPublicKey = new LTPAPublicKey(keyInfoManager.getPublicKey(config.getPrimaryKeyFile()));
+
+        byte[] privBytes = keyInfoManager.getPrivateKey(config.getPrimaryKeyFile());
+        byte[] pubBytes = keyInfoManager.getPublicKey(config.getPrimaryKeyFile());
+
+        if (useGCM) {
+            System.out.println("[LTPA-KEY-LOAD] Loading RSA keys with STANDARD encoding (PKCS#8 / X.509 KeyFactory)");
+            try {
+                KeyFactory kf = KeyFactory.getInstance("RSA");
+                primaryPrivateKey = kf.generatePrivate(new PKCS8EncodedKeySpec(privBytes));
+                primaryPublicKey = kf.generatePublic(new X509EncodedKeySpec(pubBytes));
+            } catch (Exception e) {
+                System.out.println("[LTPA-KEY-LOAD] FAILED loading standard keys: " + e.getMessage());
+                if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
+                    Tr.debug(tc, "Error generating keys (standard encoding): " + e.getMessage());
+                }
+            }
+            
+        } else {
+            System.out.println("[LTPA-KEY-LOAD] Loading RSA keys with CUSTOM LTPA encoding (LTPAPrivateKey / LTPAPublicKey)");
+            // Guard: PKCS#8 keys start with the ASN.1 sequence tag 0x30. If that is
+            // detected here it means the ltpa.keys file was generated with useGCM=true
+            // and is incompatible with useGCM=false. Delete ltpa.keys and restart.
+            if (privBytes != null && privBytes.length > 0 && privBytes[0] == 0x30) {
+                System.out.println("[LTPA-KEY-LOAD] ERROR: ltpa.keys was generated with useGCM=true (PKCS#8 format) "
+                    + "but useGCM=false is now set. Delete ltpa.keys and restart the server to regenerate compatible keys.");
+            }
+            primaryPrivateKey = new LTPAPrivateKey(privBytes);
+            primaryPublicKey = new LTPAPublicKey(pubBytes);
+        }
+        
         byte[] primarySharedKey = keyInfoManager.getSecretKey(config.getPrimaryKeyFile());
         List<LTPAValidationKeysInfo> validationKeys = keyInfoManager.getValidationLTPAKeys();
         long expDiffAllowed = config.getExpirationDifferenceAllowed();
@@ -160,6 +198,14 @@ class LTPAKeyCreateTask implements Runnable {
      * @throws Exception
      */
     void createRequiredCollaborators() throws Exception {
+        // Set useGCM on both static holders up front:
+        // - LTPAKeyFileUtilityImpl: must be set BEFORE getPreparedLtpaKeyInfoManager(),
+        //   which may call createPrimaryKeyFile() -> generateLTPAKeys() on first boot.
+        // - LTPAToken2: set here so it is correct regardless of which factory branch runs
+        //   (Token2 or Token3), since LTPAToken3Factory.initialize() never sets it.
+        boolean useGCM = config.isUseGCM();
+        LTPAKeyFileUtilityImpl.useGCM = useGCM;
+        LTPAToken2.useGCM = useGCM;
         config.setLTPAKeyInfoManager(getPreparedLtpaKeyInfoManager());
         config.setTokenFactory(getTokenFactory());
     }

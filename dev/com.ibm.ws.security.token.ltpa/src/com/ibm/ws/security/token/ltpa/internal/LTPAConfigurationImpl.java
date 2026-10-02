@@ -126,6 +126,8 @@ public class LTPAConfigurationImpl implements LTPAConfiguration, FileBasedAction
     @Sensitive
     private String pqcKeystorePassword;
 
+    private boolean useGCM = false; // Default: legacy AES-CBC path (matches metatype default)
+
     boolean isValidationKeysFileConfigured = false;
 
     protected void setExecutorService(ServiceReference<ExecutorService> ref) {
@@ -260,6 +262,14 @@ public class LTPAConfigurationImpl implements LTPAConfiguration, FileBasedAction
             mldsaAlgorithm = (String) mldsaAlgorithmObj;
             if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
                 Tr.debug(tc, "ML-DSA algorithm: " + mldsaAlgorithm);
+            }
+        }
+
+        Object useGCMObj = props.get(CFG_KEY_USE_GCM);
+        if (useGCMObj != null) {
+            useGCM = (Boolean) useGCMObj;
+            if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
+                Tr.debug(tc, "useGCM: " + useGCM);
             }
         }
 
@@ -991,6 +1001,12 @@ public class LTPAConfigurationImpl implements LTPAConfiguration, FileBasedAction
     @Sensitive
     public String getPQCKeystorePassword() {
         return pqcKeystorePassword;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean isUseGCM() {
+        return useGCM;
     }
 
     /**

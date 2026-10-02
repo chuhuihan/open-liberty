@@ -124,6 +124,13 @@ public interface LTPAConfiguration {
     public static final String CFG_KEY_PQC_KEYSTORE_PASSWORD = "pqcKeystorePassword";
 
     /**
+     * Whether to use AES-GCM authenticated encryption for LTPA token encryption.
+     * When true, uses AES-GCM with standard RSA key encoding (PKCS#8 / X.509).
+     * When false, uses the legacy AES-CBC path with custom LTPA key encoding.
+     */
+    public static final String CFG_KEY_USE_GCM = "useGCM";
+
+    /**
      * Internal property used to distinguish configured validation keys from non-configured validation keys.
      * Configured validation keys are explicitly defined in the server.xml using <validationKeys /> and require a password.
      * Non-configured validation keys are picked up when <ltpa monitorValidationKeysDir="true" /> is set and uses the same password as the primary ltpa key.
@@ -237,6 +244,13 @@ public interface LTPAConfiguration {
      * @return Password for the PQC keystore
      */
     String getPQCKeystorePassword();
+
+    /**
+     * Whether to use AES-GCM authenticated encryption (and standard RSA key encoding).
+     *
+     * @return true if AES-GCM mode is enabled, false for legacy AES-CBC mode
+     */
+    boolean isUseGCM();
 
     /**
      * @return monitor interval

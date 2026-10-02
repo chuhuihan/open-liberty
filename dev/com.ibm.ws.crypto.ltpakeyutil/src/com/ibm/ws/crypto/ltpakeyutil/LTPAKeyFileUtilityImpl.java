@@ -30,6 +30,9 @@ import com.ibm.ws.common.encoder.Base64Coder;
  */
 public class LTPAKeyFileUtilityImpl implements LTPAKeyFileUtility {
 
+    /** Configurable via metatype useGCM attribute; set by callers in the ltpa bundle before key generation. */
+    public static volatile boolean useGCM = false;
+
 	/** {@inheritDoc} */
 	@Override
 	public Properties createLTPAKeysFile(String keyFile, byte[] keyPasswordBytes) throws Exception {
@@ -85,14 +88,39 @@ public class LTPAKeyFileUtilityImpl implements LTPAKeyFileUtility {
 			byte[] publicKeyBytes, final String realm, String mldsaAlgorithm, String mlkemAlgorithm) throws Exception {
 		Properties expProps = null;
 
+		// useGCM is configured via metatype.xml and set on this class by LTPAKeyCreateTask
+		int keySize = 128;
+
 		try {
 			KeyEncryptor encryptor = new KeyEncryptor(keyPasswordBytes);
 
 			if (publicKeyBytes == null && privateKeyBytes == null) {
-				LTPAKeyPair pair = LTPADigSignature.generateLTPAKeyPair();
-				publicKeyBytes = pair.getPublic().getEncoded();
-				privateKeyBytes = pair.getPrivate().getEncoded();
+
+				if(useGCM) {
+					System.out.println("[LTPA-KEY-GEN] Generating RSA keys with STANDARD encoding (PKCS#8 / X.509)");
+					KeyPair pair = LTPACrypto.rsaKey(keySize);
+					publicKeyBytes = pair.getPublic().getEncoded();
+					privateKeyBytes = pair.getPrivate().getEncoded();
+					System.out.println("DEBUG: LTPA key pair generated successfully!");
+					System.out.println("DEBUG: Public key format: " + pair.getPublic().getFormat());
+					System.out.println("DEBUG: Public key size: " + publicKeyBytes.length + " bytes");
+					System.out.println("DEBUG: Private key format: " + pair.getPrivate().getFormat());
+					System.out.println("DEBUG: Private key size: " + privateKeyBytes.length + " bytes");
+				} else {
+					System.out.println("[LTPA-KEY-GEN] Generating RSA keys with CUSTOM LTPA encoding (raw byte slices)");
+					LTPAKeyPair pair = LTPADigSignature.generateLTPAKeyPair();
+					publicKeyBytes = pair.getPublic().getEncoded();
+					privateKeyBytes = pair.getPrivate().getEncoded();
+					System.out.println("DEBUG: LTPA key pair generated successfully!");
+					System.out.println("DEBUG: Public key format: " + pair.getPublic().getFormat());
+					System.out.println("DEBUG: Public key size: " + publicKeyBytes.length + " bytes");
+					System.out.println("DEBUG: Private key format: " + pair.getPrivate().getFormat());
+					System.out.println("DEBUG: Private key size: " + privateKeyBytes.length + " bytes");
+				}
 			}
+
+
+
 			byte[] encryptedPrivateKeyBytes = encryptor.encrypt(privateKeyBytes);
 
 			if (sharedKeyBytes == null) {
