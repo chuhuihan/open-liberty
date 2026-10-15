@@ -226,8 +226,8 @@ public class LTPAToken2Factory implements TokenFactory {
                 LTPAValidationKeysInfo ltpaKeyInfo = validationKeysIterator.next();
                 byte[] sharedKeyForValidation = ltpaKeyInfo.getSecretKey();
 
-                LTPAPrivateKey ltpaPrivateKeyForValidation = ltpaKeyInfo.getLTPAPrivateKey();
-                LTPAPublicKey ltpaPublicKeyForValidation = ltpaKeyInfo.getLTPAPublicKey();
+                PrivateKey privateKeyForValidation = ltpaKeyInfo.getPrivateKeyObject();
+                PublicKey publicKeyForValidation = ltpaKeyInfo.getPublicKeyObject();
                 byte[] ltpaPqcPrivateKeyForValidation = ltpaKeyInfo.getMLDSAPrivateKey();
                 byte[] ltpaPqcPublicKeyForValidation = ltpaKeyInfo.getMLDSAPublicKey();
 
@@ -244,17 +244,17 @@ public class LTPAToken2Factory implements TokenFactory {
                         Tr.debug(tc, "validateTokenBytes with validationKeys: " + ltpaKeyInfo);
                     }
 
-                    if (sharedKeyForValidation != null && (valMldsaKeys != null || ltpaPublicKeyForValidation != null)) {
+                    if (sharedKeyForValidation != null && (valMldsaKeys != null || publicKeyForValidation != null)) {
                         try {
                                 if (valMldsaKeys != null) {
                                     // signingMode is not passed — LTPAToken2.verify() routes on sigAlgForVerify
                                     // which is set from the token's own content, so it is correct regardless of
                                     // which keys happen to be present in this validation entry.
-                                    validatedToken = new LTPAToken2(tokenBytes, sharedKeyForValidation, ltpaPrivateKeyForValidation, ltpaPublicKeyForValidation,
+                                    validatedToken = new LTPAToken2(tokenBytes, sharedKeyForValidation, privateKeyForValidation, publicKeyForValidation,
                                                                    (PrivateKey) valMldsaKeys[0], (PublicKey) valMldsaKeys[1], signingMode,
-                                                                   expDiffAllowed, removeAttributes);
+                                                                    expDiffAllowed, removeAttributes);
                                 } else {
-                                    validatedToken = new LTPAToken2(tokenBytes, sharedKeyForValidation, ltpaPrivateKeyForValidation, ltpaPublicKeyForValidation, expDiffAllowed, removeAttributes);
+                                    validatedToken = new LTPAToken2(tokenBytes, sharedKeyForValidation, privateKeyForValidation, publicKeyForValidation, expDiffAllowed, removeAttributes);
                                 }
                             if (validatedToken != null) {
                                 if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {

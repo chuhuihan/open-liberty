@@ -502,7 +502,7 @@ public class LTPAKeyInfoManager {
         LTPAKeyFileCreator creator = new LTPAKeyFileCreatorImpl();
         Properties props;
         if ("pqc".equals(signingMode)) {
-            props = creator.createLTPAKeysFile(locService, keyImportFile, keyPassword, mldsaAlgorithm);
+            props = creator.createLTPAKeysFile(locService, keyImportFile, keyPassword, mldsaAlgorithm, classicalKeySize, resolvedCipher);
         } else {
             props = creator.createLTPAKeysFile(locService, keyImportFile, keyPassword, classicalKeySize, resolvedCipher);
         }

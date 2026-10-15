@@ -90,6 +90,9 @@ public class LTPAKeyFileUtilityImpl implements LTPAKeyFileUtility {
 		Properties expProps = null;
 
 		try {
+
+			System.out.println("DEBUG: Starting LTPA key pair generation");
+
 			KeyEncryptor encryptor = new KeyEncryptor(keyPasswordBytes);
 
 			// Shared AES key — always required for token payload encryption.
@@ -111,10 +114,19 @@ public class LTPAKeyFileUtilityImpl implements LTPAKeyFileUtility {
 						LTPAKeyPair pair = LTPADigSignature.generateLTPAKeyPair(classicalKeySize);
 						publicKeyBytes = pair.getPublic().getEncoded();
 						privateKeyBytes = pair.getPrivate().getEncoded();
+
+						System.out.println("DEBUG: LTPA key pair generated successfully! (Custom Encoding)");
+						System.out.println("DEBUG: Public key size: " + publicKeyBytes.length + " bytes");
+						System.out.println("DEBUG: Private key size: " + privateKeyBytes.length + " bytes");
+
 					} else {
 						KeyPair pair = LTPACrypto.rsaKey(classicalKeySize);
 						publicKeyBytes = pair.getPublic().getEncoded();
 						privateKeyBytes = pair.getPrivate().getEncoded();
+
+						System.out.println("DEBUG: LTPA key pair generated successfully! (Standard Encoding)");
+						System.out.println("DEBUG: Public key size: " + publicKeyBytes.length + " bytes");
+						System.out.println("DEBUG: Private key size: " + privateKeyBytes.length + " bytes");
 					}
 				}
 				byte[] encryptedPrivateKeyBytes = encryptor.encrypt(privateKeyBytes);

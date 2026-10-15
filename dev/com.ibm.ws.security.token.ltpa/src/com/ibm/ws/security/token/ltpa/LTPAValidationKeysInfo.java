@@ -10,6 +10,11 @@
  *******************************************************************************/
 package com.ibm.ws.security.token.ltpa;
 
+import java.security.KeyFactory;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.time.OffsetDateTime;
 
 import com.ibm.websphere.ras.Tr;
@@ -30,6 +35,8 @@ public class LTPAValidationKeysInfo {
     private byte[] publicKey = null;
     private byte[] mldsaPrivateKey = null;
     private byte[] mldsaPublicKey = null;
+    private PrivateKey privateKeyObj = null;
+    private PublicKey publicKeyObj = null;
     private LTPAPrivateKey ltpaPrivateKey = null;
     private LTPAPublicKey ltpaPublicKey = null;
     private LTPAPQCKeys pqcKeys = null;
@@ -42,8 +49,35 @@ public class LTPAValidationKeysInfo {
         this.privateKey = privateKey;
         this.publicKey = publicKey;
         this.validUntilDateOdt = validUntilDateOdt;
-        ltpaPrivateKey = new LTPAPrivateKey(privateKey);
-        ltpaPublicKey = new LTPAPublicKey(publicKey);
+
+        // Auto-detect standard (ASN.1 DER sequence 0x30) vs custom legacy LTPA encoding
+        boolean isStandardPub = publicKey != null && publicKey.length > 0 && publicKey[0] == 0x30;
+        boolean isStandardPriv = privateKey != null && privateKey.length > 0 && privateKey[0] == 0x30;
+
+        if (isStandardPub) {
+            try {
+                System.out.println("DEBUG: Trying to recreate keys using standard encoding.");
+                KeyFactory kf = KeyFactory.getInstance("RSA");
+                publicKeyObj = kf.generatePublic(new X509EncodedKeySpec(publicKey));
+                if (privateKey != null && isStandardPriv) {
+                    privateKeyObj = kf.generatePrivate(new PKCS8EncodedKeySpec(privateKey));
+                }
+            } catch (Exception e) {
+                if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
+                    Tr.debug(tc, "Error generating standard RSA validation keys for " + filename + ": " + e.getMessage());
+                }
+            }
+        } else {
+            System.out.println("DEBUG: Trying to recreate keys using custom encoding.");
+            if (privateKey != null) {
+                ltpaPrivateKey = new LTPAPrivateKey(privateKey);
+                privateKeyObj = ltpaPrivateKey;
+            }
+            if (publicKey != null) {
+                ltpaPublicKey = new LTPAPublicKey(publicKey);
+                publicKeyObj = ltpaPublicKey;
+            }
+        }
     }
 
     LTPAValidationKeysInfo(String filename, byte[] secretKey, byte[] mldsaPrivateKey, byte[] mldsaPublicKey, OffsetDateTime validUntilDateOdt, boolean pqc) {
@@ -76,6 +110,14 @@ public class LTPAValidationKeysInfo {
 
     public LTPAPublicKey getLTPAPublicKey() {
         return ltpaPublicKey;
+    }
+
+    public PrivateKey getPrivateKeyObject() {
+        return privateKeyObj;
+    }
+
+    public PublicKey getPublicKeyObject() {
+        return publicKeyObj;
     }
 
     public byte[] getMLDSAPrivateKey() {

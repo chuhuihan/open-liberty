@@ -108,8 +108,14 @@ public class LTPAKeyFileCreatorImpl extends LTPAKeyFileUtilityImpl implements LT
     /** {@inheritDoc} */
     @Override
     public Properties createLTPAKeysFile(WsLocationAdmin locService, String keyFile, @Sensitive byte[] keyPasswordBytes, String mldsaAlgorithm) throws Exception {
+        return createLTPAKeysFile(locService, keyFile, keyPasswordBytes, mldsaAlgorithm, 0, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public Properties createLTPAKeysFile(WsLocationAdmin locService, String keyFile, @Sensitive byte[] keyPasswordBytes, String mldsaAlgorithm, int classicalKeySize, String resolvedCipher) throws Exception {
         String realmName = isUserRegistryAvailable() ? getRealmName() : "defaultRealm";
-        Properties ltpaProps = generateLTPAKeys(keyPasswordBytes, null, null, null, realmName, mldsaAlgorithm, 0, null);
+        Properties ltpaProps = generateLTPAKeys(keyPasswordBytes, null, null, null, realmName, mldsaAlgorithm, classicalKeySize, resolvedCipher);
         addLTPAKeysToFile(getOutputStream(locService, keyFile), ltpaProps);
         return ltpaProps;
     }
