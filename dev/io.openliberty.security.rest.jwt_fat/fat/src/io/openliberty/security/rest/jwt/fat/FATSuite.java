@@ -23,8 +23,10 @@ import componenttest.custom.junit.runner.AlwaysPassesTest;
                 AlwaysPassesTest.class,
                 RestJwtFATTest.class,
                 RestJwtNoConnectorFATTest.class,
+                RestJwtNoJwtFATTest.class,
                 RestJwtKeyFileFATTest.class,
-                RestJwtKeyFileInvalidFATTest.class
+                RestJwtKeyFileInvalidFATTest.class,
+                RestJwtKeyRotationFATTest.class
 })
 public class FATSuite {
     public static final String REST_MBEANS_ENDPOINT = "/IBMJMXConnectorREST/mbeans";
